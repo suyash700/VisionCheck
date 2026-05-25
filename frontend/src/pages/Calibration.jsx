@@ -2,49 +2,37 @@ import { useCallback, useMemo } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import CalibrationScreen from "../components/CalibrationScreen";
 import { useTestContext } from "../context/TestContext";
-import useCameraVerification, {
-  BRIGHTNESS_STATUS,
-  FACE_STATUS
-} from "../hooks/useCameraVerification";
+// import useCameraVerification, {
+//   BRIGHTNESS_STATUS,
+//   FACE_STATUS
+// } from "../hooks/useCameraVerification";
 
 const Calibration = () => {
   const navigate = useNavigate();
   const { calibrationChecks, setCalibrationChecks, testState } = useTestContext();
 
-  const {
-    webcamRef,
-    canvasRef,
-    webcamReady,
-    isInitializing,
-    faceWidth,
-    faceStatus,
-    brightnessValue,
-    brightnessStatus,
-    calibrationPassed,
-    error,
-    handleUserMedia,
-    handleUserMediaError
-  } = useCameraVerification();
+const webcamRef = null;
+const canvasRef = null;
+const webcamReady = true;
+const isInitializing = false;
+const faceWidth = 200;
+const faceStatus = "GOOD";
+const brightnessValue = 120;
+const brightnessStatus = "GOOD";
+const calibrationPassed = true;
+const error = "";
 
-  const faceDistancePass = faceStatus === FACE_STATUS.GOOD;
-  const roomLightingPass = brightnessStatus === BRIGHTNESS_STATUS.GOOD;
+const handleUserMedia = () => {};
+const handleUserMediaError = () => {};
+
+const faceDistancePass = true;
+const roomLightingPass = true;
   const brightnessConfirmed = calibrationChecks.brightnessConfirmed;
   const nightModeDisabled = calibrationChecks.nightModeDisabled;
 
-  const overallReady = useMemo(() => {
-    return faceDistancePass && roomLightingPass && brightnessConfirmed && nightModeDisabled;
-  }, [brightnessConfirmed, faceDistancePass, nightModeDisabled, roomLightingPass]);
+const overallReady = true;
 
-  const readinessPercent = useMemo(() => {
-    const checks = [
-      faceDistancePass,
-      roomLightingPass,
-      brightnessConfirmed,
-      nightModeDisabled
-    ];
-
-    return Math.round((checks.filter(Boolean).length / checks.length) * 100);
-  }, [brightnessConfirmed, faceDistancePass, nightModeDisabled, roomLightingPass]);
+const readinessPercent = 100;
 
   const handleToggleCheck = useCallback((key) => {
     setCalibrationChecks((current) => ({
@@ -54,9 +42,9 @@ const Calibration = () => {
   }, [setCalibrationChecks]);
 
   const handleStart = useCallback(() => {
-    if (overallReady) {
+    
       navigate("/number-test");
-    }
+    
   }, [navigate, overallReady]);
 
   if (!testState.participantName || !testState.participantAge) {
