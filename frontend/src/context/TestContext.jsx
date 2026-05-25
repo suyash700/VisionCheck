@@ -38,7 +38,7 @@ const initialCameraVerification = {
   movementMessage: "",
   movementWarningCount: 0,
   shouldPauseAssessment: false,
-  calibrationPassed: false,
+  calibrationPassed: true,
   webcamReady: false,
   error: ""
 };
