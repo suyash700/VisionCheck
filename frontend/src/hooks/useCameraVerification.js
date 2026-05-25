@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import * as FaceMeshModule from "@mediapipe/face_mesh";
+import { FaceMesh } from "@mediapipe/face_mesh";
 import { Camera } from "@mediapipe/camera_utils";
 
 export const FACE_STATUS = {
@@ -150,8 +150,9 @@ const useCameraVerification = () => {
       "Default export keys:",
       Object.keys(FaceMeshModule.default || {})
     );
-      const faceMesh = new FaceMeshModule.default.FaceMesh({
-        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
+      const faceMesh = new FaceMeshModule.FaceMesh({
+        locateFile: (file) =>
+          `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
       });
 
       faceMesh.setOptions({
