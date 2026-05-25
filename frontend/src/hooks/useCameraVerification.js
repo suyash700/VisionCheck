@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import * as FaceMeshModule from "@mediapipe/face_mesh";
+import { FaceMesh } from "@mediapipe/face_mesh";
 import { Camera } from "@mediapipe/camera_utils";
 
 console.log("=== MEDIAPIPE EXPORTS ===");
@@ -168,10 +168,10 @@ try {
 console.log("FaceMeshClass =", FaceMeshClass);
 console.log("typeof FaceMeshClass =", typeof FaceMeshClass);
 
-  const faceMesh = new FaceMeshClass({
-    locateFile: (file) =>
-      `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
-  });
+const faceMesh = new FaceMesh({
+  locateFile: (file) =>
+    `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
+});
 
   faceMesh.setOptions({
     maxNumFaces: 2,
