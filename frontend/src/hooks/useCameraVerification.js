@@ -164,9 +164,8 @@ try {
     );
   }
 
-  console.log("FaceMeshModule =", FaceMeshModule);
-console.log("FaceMeshClass =", FaceMeshClass);
-console.log("typeof FaceMeshClass =", typeof FaceMeshClass);
+  console.log("FaceMesh =", FaceMesh);
+  console.log("typeof FaceMesh =", typeof FaceMesh);
 
 const faceMesh = new FaceMesh({
   locateFile: (file) =>
