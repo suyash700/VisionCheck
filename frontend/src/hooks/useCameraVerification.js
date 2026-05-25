@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FaceMesh } from "@mediapipe/face_mesh";
+import FaceMeshModule from "@mediapipe/face_mesh";
 import { Camera } from "@mediapipe/camera_utils";
 
 export const FACE_STATUS = {
