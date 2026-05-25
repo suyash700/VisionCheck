@@ -215,12 +215,20 @@ const useCameraVerification = () => {
       calculateBrightness();
       brightnessIntervalRef.current = window.setInterval(calculateBrightness, 1000);
       setIsInitializing(false);
-    } catch (_error) {
-      setFaceStatus(FACE_STATUS.ERROR);
-      setBrightnessStatus(BRIGHTNESS_STATUS.ERROR);
-      setError("MediaPipe initialization failure.");
-      setIsInitializing(false);
-    }
+    } catch (error) {
+  console.error("MediaPipe initialization error:", error);
+
+  setFaceStatus(FACE_STATUS.ERROR);
+  setBrightnessStatus(BRIGHTNESS_STATUS.ERROR);
+
+  setError(
+    `MediaPipe initialization failure: ${
+      error?.message || "Unknown error"
+    }`
+  );
+
+  setIsInitializing(false);
+}
   }, [calculateBrightness, webcamReady]);
 
   useEffect(() => {
