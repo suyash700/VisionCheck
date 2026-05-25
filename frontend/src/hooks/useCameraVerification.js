@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import FaceMeshModule from "@mediapipe/face_mesh";
+import * as FaceMeshModule from "@mediapipe/face_mesh";
 import { Camera } from "@mediapipe/camera_utils";
 
 export const FACE_STATUS = {
@@ -141,26 +141,37 @@ const useCameraVerification = () => {
       return;
     }
 
-    try {
-      initializedRef.current = true;
-      setIsInitializing(true);
-      setError("");
-    console.log("Default export:", FaceMeshModule.default);
-    console.log(
-      "Default export keys:",
-      Object.keys(FaceMeshModule.default || {})
-    );
-      const faceMesh = new FaceMeshModule.FaceMesh({
-        locateFile: (file) =>
-          `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
-      });
+try {
+  initializedRef.current = true;
+  setIsInitializing(true);
+  setError("");
 
-      faceMesh.setOptions({
-        maxNumFaces: 2,
-        refineLandmarks: false,
-        minDetectionConfidence: 0.6,
-        minTrackingConfidence: 0.6
-      });
+  console.log("MediaPipe Module:", FaceMeshModule);
+
+  const FaceMeshClass =
+    FaceMeshModule.FaceMesh ||
+    FaceMeshModule.default?.FaceMesh ||
+    FaceMeshModule.default;
+
+  if (!FaceMeshClass) {
+    throw new Error(
+      `FaceMesh constructor not found. Available exports: ${Object.keys(
+        FaceMeshModule || {}
+      ).join(", ")}`
+    );
+  }
+
+  const faceMesh = new FaceMeshClass({
+    locateFile: (file) =>
+      `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
+  });
+
+  faceMesh.setOptions({
+    maxNumFaces: 2,
+    refineLandmarks: false,
+    minDetectionConfidence: 0.6,
+    minTrackingConfidence: 0.6,
+  });
 
       faceMesh.onResults((results) => {
         const faces = results.multiFaceLandmarks || [];
