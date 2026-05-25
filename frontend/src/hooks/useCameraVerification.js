@@ -145,7 +145,8 @@ const useCameraVerification = () => {
       initializedRef.current = true;
       setIsInitializing(true);
       setError("");
-
+        console.log("FaceMeshModule:", FaceMeshModule);
+        console.log("Available keys:", Object.keys(FaceMeshModule));
       const faceMesh = new FaceMeshModule.FaceMesh({
         locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
       });
