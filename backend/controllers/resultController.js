@@ -1,4 +1,5 @@
 import Result from "../models/Result.js";
+import { buildDashboardStats, buildResultFilters } from "../services/adminService.js";
 import { evaluateDiagnosis } from "../services/diagnosisService.js";
 
 export const diagnoseResponses = async (req, res) => {
@@ -38,24 +39,49 @@ export const diagnoseResponses = async (req, res) => {
 export const saveResults = async (req, res) => {
   try {
     const {
-      answers = [],
-      numberScore,
+      name = "",
+      age = "",
       diagnosis,
-      tracingImageBase64 = ""
+      numberPlateScore,
+      tracingPlateScore,
+      noResponseCount,
+      totalCorrectAnswers = 0,
+      totalQuestions = 25,
+      completedAt,
+      consent = true,
+      completionStatus = "completed",
+      responses = {}
     } = req.body;
 
-    if (typeof numberScore !== "number" || !diagnosis?.trim()) {
+    if (
+      !diagnosis?.trim() ||
+      typeof numberPlateScore !== "number" ||
+      typeof tracingPlateScore !== "number" ||
+      typeof noResponseCount !== "number" ||
+      !completedAt
+    ) {
       return res.status(400).json({
         success: false,
-        message: "numberScore and diagnosis are required."
+        message: "diagnosis, numberPlateScore, tracingPlateScore, noResponseCount, and completedAt are required."
       });
     }
 
     const createdResult = await Result.create({
-      answers,
-      numberScore,
+      name: name.trim(),
+      age: `${age}`.trim(),
       diagnosis: diagnosis.trim(),
-      tracingImageBase64
+      numberPlateScore,
+      tracingPlateScore,
+      noResponseCount,
+      totalCorrectAnswers,
+      totalQuestions,
+      completedAt,
+      consent: Boolean(consent),
+      completionStatus,
+      responses: {
+        number: Array.isArray(responses.number) ? responses.number : [],
+        tracing: Array.isArray(responses.tracing) ? responses.tracing : []
+      }
     });
 
     return res.status(201).json({
@@ -74,7 +100,7 @@ export const saveResults = async (req, res) => {
 
 export const getResults = async (req, res) => {
   try {
-    const results = await Result.find().sort({ date: -1 });
+    const results = await Result.find(buildResultFilters(req.query)).sort({ completedAt: -1 });
 
     return res.status(200).json({
       success: true,
@@ -137,86 +163,14 @@ export const deleteResult = async (req, res) => {
   }
 };
 
-export const seedTestResult = async (_req, res) => {
+export const getDashboardStats = async (req, res) => {
   try {
-    await Result.create({
-      answers: [
-        {
-          plate: 1,
-          answer: "12"
-        },
-        {
-          plate: 2,
-          answer: "8"
-        }
-      ],
-      numberScore: 18,
-      diagnosis: "Normal Color Vision"
-    });
+    const results = await Result.find(buildResultFilters(req.query)).sort({ completedAt: -1 });
 
-    return res.status(201).json({
+    return res.status(200).json({
       success: true,
-      message: "Test document inserted"
+      data: buildDashboardStats(results)
     });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Failed to insert test document.",
-      error: error.message
-    });
-  }
-};
-
-export const getDashboardStats = async (_req, res) => {
-  try {
-    const [stats] = await Result.aggregate([
-      {
-        $group: {
-          _id: null,
-          totalTests: { $sum: 1 },
-          normalVision: {
-            $sum: {
-              $cond: [{ $regexMatch: { input: "$diagnosis", regex: /normal color vision/i } }, 1, 0]
-            }
-          },
-          protanopia: {
-            $sum: {
-              $cond: [{ $regexMatch: { input: "$diagnosis", regex: /protanopia/i } }, 1, 0]
-            }
-          },
-          deuteranopia: {
-            $sum: {
-              $cond: [{ $regexMatch: { input: "$diagnosis", regex: /deuteranopia/i } }, 1, 0]
-            }
-          },
-          borderline: {
-            $sum: {
-              $cond: [{ $regexMatch: { input: "$diagnosis", regex: /borderline|inconclusive/i } }, 1, 0]
-            }
-          }
-        }
-      },
-      {
-        $project: {
-          _id: 0,
-          totalTests: 1,
-          normalVision: 1,
-          protanopia: 1,
-          deuteranopia: 1,
-          borderline: 1
-        }
-      }
-    ]);
-
-    return res.status(200).json(
-      stats || {
-        totalTests: 0,
-        normalVision: 0,
-        protanopia: 0,
-        deuteranopia: 0,
-        borderline: 0
-      }
-    );
   } catch (error) {
     return res.status(500).json({
       success: false,

@@ -1,33 +1,29 @@
-const screeningPlates = [
-  { plate: 1, accepted: ["12"] },
-  { plate: 2, accepted: ["8"] },
-  { plate: 3, accepted: ["6"] },
-  { plate: 4, accepted: ["29"] },
-  { plate: 5, accepted: ["57"] },
-  { plate: 6, accepted: ["5"] },
-  { plate: 7, accepted: ["3"] },
-  { plate: 8, accepted: ["15"] },
-  { plate: 9, accepted: ["74"] },
-  { plate: 10, accepted: ["2"] },
-  { plate: 11, accepted: ["6"] },
-  { plate: 12, accepted: ["97"] },
-  { plate: 13, accepted: ["45"] },
-  { plate: 14, accepted: ["5"] },
-  { plate: 15, accepted: ["7"] },
-  { plate: 16, accepted: ["16"] },
-  { plate: 17, accepted: ["73"] },
-  { plate: 18, accepted: ["", "none", "nothing", "no number", "nil"] },
-  { plate: 19, accepted: ["", "none", "nothing", "no number", "nil"] },
-  { plate: 20, accepted: ["", "none", "nothing", "no number", "nil"] },
-  { plate: 21, accepted: ["", "none", "nothing", "no number", "nil"] }
-];
+import clinicalRules from "../data/clinicalRules.json";
+import { PLATE_TYPES } from "./plateCatalog";
 
-const classificationPlates = {
-  22: { normal: "26", protan: "6", deutan: "2" },
-  23: { normal: "42", protan: "2", deutan: "4" },
-  24: { normal: "35", protan: "5", deutan: "3" },
-  25: { normal: "96", protan: "6", deutan: "9" }
-};
+const numberPlates = clinicalRules.plates.filter((plate) => plate.answerMode === "number");
+
+const screeningPlates = numberPlates
+  .filter((plate) => [PLATE_TYPES.DEMO, PLATE_TYPES.SCREENING, PLATE_TYPES.HIDDEN_DIGIT].includes(plate.type))
+  .map((plate) => ({
+    plate: plate.id,
+    type: plate.type,
+    accepted:
+      plate.type === PLATE_TYPES.HIDDEN_DIGIT
+        ? ["", "none", "nothing", "no number", "nil", "no response"]
+        : [plate.normalAnswer]
+  }));
+
+const classificationPlates = numberPlates
+  .filter((plate) => plate.type === PLATE_TYPES.CLASSIFICATION)
+  .reduce((lookup, plate) => {
+    lookup[plate.id] = {
+      normal: plate.normalAnswer,
+      protan: plate.protanAnswer,
+      deutan: plate.deutanAnswer
+    };
+    return lookup;
+  }, {});
 
 const normalizeAnswer = (value = "") =>
   value.toString().trim().toLowerCase().replace(/\s+/g, " ");
@@ -57,7 +53,7 @@ const isScreeningAnswerCorrect = (plateRule, response) => {
     return true;
   }
 
-  if (plateRule.plate >= 18 && plateRule.plate <= 21) {
+  if (plateRule.type === PLATE_TYPES.HIDDEN_DIGIT) {
     return response.tokens.length === 0;
   }
 
@@ -120,12 +116,12 @@ export const evaluateDiagnosis = (answers = []) => {
   if (numberScore >= 17) {
     return {
       answers,
-      numberScore,
+      numberPlateScore: numberScore,
       diagnosis: "Normal Color Vision",
       explanation: "Score exceeded the clinical threshold of 17 on the Ishihara screening plates.",
       totalCorrectAnswers,
       totalQuestions: 25,
-      date: new Date().toISOString()
+      completedAt: new Date().toISOString()
     };
   }
 
@@ -133,22 +129,22 @@ export const evaluateDiagnosis = (answers = []) => {
     const subtype = classifySubtype(responseMap);
     return {
       answers,
-      numberScore,
+      numberPlateScore: numberScore,
       diagnosis: subtype.diagnosis,
       explanation: `${numberScore} screening plates were read normally, which falls in the deficient range. ${subtype.explanation}`,
       totalCorrectAnswers,
       totalQuestions: 25,
-      date: new Date().toISOString()
+      completedAt: new Date().toISOString()
     };
   }
 
   return {
     answers,
-    numberScore,
+    numberPlateScore: numberScore,
     diagnosis: "Borderline / Inconclusive Screening",
     explanation: "The score is between 14 and 16, so the screening is borderline and should be reviewed clinically.",
     totalCorrectAnswers,
     totalQuestions: 25,
-    date: new Date().toISOString()
+    completedAt: new Date().toISOString()
   };
 };

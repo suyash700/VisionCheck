@@ -1,132 +1,153 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import CanvasTracer from "../components/CanvasTracer";
-import LoadingSpinner from "../components/LoadingSpinner";
-import PlateCard from "../components/PlateCard";
+import InfoCard from "../components/InfoCard";
+import PageHero from "../components/PageHero";
+import PlateTimer from "../components/PlateTimer";
 import ProgressBar from "../components/ProgressBar";
-import clinicalRules from "../data/clinicalRules.json";
+import TraceCanvas from "../components/TraceCanvas";
+import usePlateTimer from "../hooks/usePlateTimer";
 import { useTestContext } from "../context/TestContext";
-import { saveResults } from "../services/api";
+import { TRACING_PLATES } from "../utils/plateCatalog";
 
-const tracingPlates = clinicalRules.tracingPlates;
+const tracingGuidance = [
+  "Trace the path directly over the visible line.",
+  "Use Clear if you want to restart before submitting.",
+  "Canvas data is checked in-browser and not stored as an image."
+];
 
 const TracingTest = () => {
   const navigate = useNavigate();
-  const {
-    testState,
-    tracingSubmissions,
-    setTracingSubmissions,
-    setTestState,
-    setSavedResult
-  } = useTestContext();
+  const { testState, setTestState } = useTestContext();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
+  const [feedback, setFeedback] = useState("");
+  const timeoutHandledRef = useRef(false);
 
-  const currentPlate = tracingPlates[currentIndex];
-  const isLastPlate = currentIndex === tracingPlates.length - 1;
+  const currentPlate = TRACING_PLATES[currentIndex];
+  const isLastPlate = currentIndex === TRACING_PLATES.length - 1;
 
-  const handleTraceSubmit = (imageBase64) => {
-    setTracingSubmissions((current) => {
-      const filtered = current.filter((item) => item.plate !== currentPlate.plate);
-      return [...filtered, { plate: currentPlate.plate, imageBase64 }].sort((a, b) => a.plate - b.plate);
-    });
+  const finalize = (latestTracingResponses) => {
+    const noResponseCount =
+      testState.answers.filter((response) => response.status === "no-response").length +
+      latestTracingResponses.filter((response) => response.status === "no-response").length;
+
+    const tracingPlateScore = latestTracingResponses.filter((response) => response.isCorrect).length;
+
+    setTestState((current) => ({
+      ...current,
+      tracingResponses: latestTracingResponses,
+      tracingPlateScore,
+      noResponseCount,
+      completedAt: current.completedAt || new Date().toISOString()
+    }));
+
+    navigate("/result");
+  };
+
+  const advance = (result) => {
+    const latestTracingResponses = [
+      ...testState.tracingResponses.filter((response) => response.plateId !== currentPlate.id),
+      result
+    ].sort((first, second) => first.plateId - second.plateId);
+
+    setTestState((current) => ({
+      ...current,
+      tracingResponses: latestTracingResponses
+    }));
 
     if (!isLastPlate) {
+      timeoutHandledRef.current = false;
       setCurrentIndex((value) => value + 1);
       return;
     }
 
-    finalizeResult([
-      ...tracingSubmissions.filter((item) => item.plate !== currentPlate.plate),
-      { plate: currentPlate.plate, imageBase64 }
-    ]);
+    finalize(latestTracingResponses);
   };
 
-  const finalizeResult = async (latestSubmissions) => {
-    try {
-      setSaving(true);
-      setError("");
-      setSuccessMessage("");
-
-      const tracingImageBase64 = JSON.stringify(latestSubmissions);
-      setTestState((current) => ({
-        ...current,
-        tracingImageBase64
-      }));
-
-      const response = await saveResults({
-        answers: testState.answers,
-        numberScore: testState.numberScore,
-        diagnosis: testState.diagnosis,
-        tracingImageBase64
-      });
-
-      setSavedResult(response.data);
-      setSuccessMessage("Results stored successfully in MongoDB Atlas.");
-      navigate("/result");
-    } catch (apiError) {
-      setError(apiError.response?.data?.message || "Failed to save results.");
-    } finally {
-      setSaving(false);
+  const handleTimeout = () => {
+    if (timeoutHandledRef.current) {
+      return;
     }
+
+    timeoutHandledRef.current = true;
+    setFeedback("No Response recorded for this tracing plate.");
+    advance({
+      plateId: currentPlate.id,
+      status: "no-response",
+      isCorrect: false
+    });
   };
 
-  const handleSkipRemaining = async () => {
-    await finalizeResult(tracingSubmissions);
-  };
+  const timer = usePlateTimer({
+    durationSeconds: 60,
+    plateKey: currentPlate.id,
+    onExpire: handleTimeout
+  });
 
   if (!testState.diagnosis) {
     return <Navigate to="/calibration" replace />;
   }
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-      <div className="grid gap-6 lg:grid-cols-[0.72fr_0.28fr]">
-        <div className="space-y-6">
-          <ProgressBar
-            current={currentIndex + 1}
-            total={tracingPlates.length}
-            label={`Tracing plate ${currentPlate.plate} of ${tracingPlates[tracingPlates.length - 1].plate}`}
-          />
+    <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <PageHero
+        eyebrow="Step 4 of 5"
+        title="Tracing Validation"
+        description="The tracing stage is now organized into a cleaner workspace: timer and progress at the top, tracing canvas at the center, and session guidance in a dedicated side column."
+        asideTitle="Current Diagnosis Context"
+        asideDescription={`Number screening result: ${testState.diagnosis}`}
+      />
 
-          <PlateCard
+      <div className="mt-8 grid gap-6 lg:grid-cols-[0.7fr_0.3fr]">
+        <section className="space-y-6">
+          <div className="grid gap-4 xl:grid-cols-[1fr_0.9fr]">
+            <ProgressBar
+              current={currentIndex + 1}
+              total={TRACING_PLATES.length}
+              label={`Tracing plate ${currentPlate.id}`}
+            />
+            <PlateTimer secondsLeft={timer.secondsLeft} progress={timer.progress} />
+          </div>
+
+          <TraceCanvas
             plate={currentPlate}
-            title="Tracing Plate Review"
-            subtitle={currentPlate.prompt}
+            onSubmit={(result) => {
+              setFeedback(result.isCorrect ? "Correct Trace" : "Incorrect Trace");
+              advance(result);
+            }}
           />
-
-          <CanvasTracer onSubmit={handleTraceSubmit} helperText={`Plate ${currentPlate.plate}: trace the visible path, then submit to move to the next tracing plate.`} />
-        </div>
+        </section>
 
         <aside className="space-y-4">
-          <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-panel">
-            <h2 className="text-lg font-semibold text-ink">Tracing Progress</h2>
-            <p className="mt-3 text-sm text-slate-600">Diagnosis: {testState.diagnosis}</p>
-            <p className="mt-1 text-sm text-slate-600">Saved traces: {tracingSubmissions.length} / {tracingPlates.length}</p>
-            <p className="mt-1 text-sm text-slate-600">Answers captured: {testState.answers?.length || 0} / 25</p>
-          </div>
-
-          <div className="rounded-[2rem] border border-amber-100 bg-amber-50 p-6 shadow-panel">
-            <h2 className="text-lg font-semibold text-ink">Physician Note</h2>
-            <p className="mt-3 text-sm text-slate-600">
-              Tracing plates are stored exactly as drawn and are never auto-graded. They remain available only for physician review in the admin dashboard.
-            </p>
-          </div>
-
-          {error ? <p className="text-sm text-danger">{error}</p> : null}
-          {successMessage ? <p className="text-sm text-success">{successMessage}</p> : null}
-          {saving ? <LoadingSpinner label="Saving final screening result..." /> : null}
-
-          <button
-            type="button"
-            onClick={handleSkipRemaining}
-            disabled={saving}
-            className="w-full rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:text-slate-400"
+          <InfoCard
+            eyebrow="Tracing Progress"
+            title="Session Summary"
+            description={`Validated traces: ${testState.tracingResponses.filter((response) => response.isCorrect).length} / ${TRACING_PLATES.length}`}
           >
-            {saving ? "Saving..." : "Save Current Result"}
-          </button>
+            <div className="space-y-2 text-sm text-slate-600">
+              <p>Unanswered tracing plates are stored as No Response.</p>
+              <p>Current plate ID: {currentPlate.id}</p>
+            </div>
+          </InfoCard>
+
+          <InfoCard eyebrow="Privacy" title="Canvas Handling" tone="success">
+            <p className="text-sm leading-6 text-slate-600">
+              Trace drawings are validated in the browser and discarded immediately after use. No canvas image data is preserved in storage.
+            </p>
+          </InfoCard>
+
+          <InfoCard eyebrow="Guidance" title="Tracing Tips" tone="highlight">
+            <div className="space-y-2 text-sm text-slate-600">
+              {tracingGuidance.map((item) => (
+                <p key={item}>{item}</p>
+              ))}
+            </div>
+          </InfoCard>
+
+          {feedback ? (
+            <div className={`rounded-[1.5rem] border px-4 py-3 text-sm font-semibold ${feedback === "Correct Trace" ? "border-emerald-200 bg-emerald-50 text-success" : "border-rose-200 bg-rose-50 text-danger"}`}>
+              {feedback}
+            </div>
+          ) : null}
         </aside>
       </div>
     </main>

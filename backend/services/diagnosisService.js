@@ -205,7 +205,7 @@ export const evaluateDiagnosis = (responses = []) => {
   return {
     numberScore,
     diagnosis: "Borderline / Inconclusive Screening",
-    explanation: "The screening score falls between 14 and 16, which is a borderline range. A clinician should review the trace plates and repeat testing under controlled illumination.",
+    explanation: "The screening score falls between 14 and 16, which is a borderline range. Repeat testing under controlled illumination is recommended.",
     screeningDetails,
     hiddenDigitFlags
   };

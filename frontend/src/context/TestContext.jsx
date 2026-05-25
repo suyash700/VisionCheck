@@ -3,32 +3,56 @@ import { createContext, useContext, useMemo, useState } from "react";
 const TestContext = createContext(null);
 
 const initialCalibration = {
-  brightness: false,
-  nightLightDisabled: false,
-  distanceMaintained: false
+  brightnessConfirmed: false,
+  nightModeDisabled: false
 };
 
 const initialTestState = {
+  participantName: "",
+  participantAge: "",
+  displayPreferences: {
+    brightnessBoost: 100,
+    temperature: 0,
+    darkMode: false,
+    optimized: false
+  },
   answers: [],
-  numberScore: 0,
+  tracingResponses: [],
+  numberPlateScore: 0,
+  tracingPlateScore: 0,
+  noResponseCount: 0,
   diagnosis: "",
-  tracingImageBase64: "",
   explanation: "",
   totalCorrectAnswers: 0,
   totalQuestions: 25,
-  date: ""
+  completedAt: "",
+  saveStatus: "idle"
+};
+
+const initialCameraVerification = {
+  faceWidth: 0,
+  faceStatus: "LOADING",
+  brightnessValue: null,
+  brightnessStatus: "LOADING",
+  movementStatus: "LOADING",
+  movementMessage: "",
+  movementWarningCount: 0,
+  shouldPauseAssessment: false,
+  calibrationPassed: false,
+  webcamReady: false,
+  error: ""
 };
 
 export const TestProvider = ({ children }) => {
   const [calibrationChecks, setCalibrationChecks] = useState(initialCalibration);
   const [testState, setTestState] = useState(initialTestState);
-  const [tracingSubmissions, setTracingSubmissions] = useState([]);
+  const [cameraVerification, setCameraVerification] = useState(initialCameraVerification);
   const [savedResult, setSavedResult] = useState(null);
 
   const resetTestState = () => {
     setCalibrationChecks(initialCalibration);
     setTestState(initialTestState);
-    setTracingSubmissions([]);
+    setCameraVerification(initialCameraVerification);
     setSavedResult(null);
   };
 
@@ -38,13 +62,13 @@ export const TestProvider = ({ children }) => {
       setCalibrationChecks,
       testState,
       setTestState,
-      tracingSubmissions,
-      setTracingSubmissions,
+      cameraVerification,
+      setCameraVerification,
       savedResult,
       setSavedResult,
       resetTestState
     }),
-    [calibrationChecks, testState, tracingSubmissions, savedResult]
+    [calibrationChecks, testState, cameraVerification, savedResult]
   );
 
   return <TestContext.Provider value={value}>{children}</TestContext.Provider>;
