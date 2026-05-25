@@ -164,6 +164,10 @@ try {
     );
   }
 
+  console.log("FaceMeshModule =", FaceMeshModule);
+console.log("FaceMeshClass =", FaceMeshClass);
+console.log("typeof FaceMeshClass =", typeof FaceMeshClass);
+
   const faceMesh = new FaceMeshClass({
     locateFile: (file) =>
       `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
