@@ -3,7 +3,7 @@ import { FaceMesh } from "@mediapipe/face_mesh";
 import { Camera } from "@mediapipe/camera_utils";
 
 console.log("=== MEDIAPIPE EXPORTS ===");
-console.log(FaceMeshModule);
+
 
 export const FACE_STATUS = {
   LOADING: "LOADING",
@@ -149,20 +149,20 @@ try {
   setIsInitializing(true);
   setError("");
 
-  console.log("MediaPipe Module:", FaceMeshModule);
+  // console.log("MediaPipe Module:", FaceMeshModule);
 
-  const FaceMeshClass =
-    FaceMeshModule.FaceMesh ||
-    FaceMeshModule.default?.FaceMesh ||
-    FaceMeshModule.default;
+  // const FaceMeshClass =
+  //   FaceMeshModule.FaceMesh ||
+  //   FaceMeshModule.default?.FaceMesh ||
+  //   FaceMeshModule.default;
 
-  if (!FaceMeshClass) {
-    throw new Error(
-      `FaceMesh constructor not found. Available exports: ${Object.keys(
-        FaceMeshModule || {}
-      ).join(", ")}`
-    );
-  }
+  // if (!FaceMeshClass) {
+  //   throw new Error(
+  //     `FaceMesh constructor not found. Available exports: ${Object.keys(
+  //       FaceMeshModule || {}
+  //     ).join(", ")}`
+  //   );
+  // }
 
   console.log("FaceMesh =", FaceMesh);
   console.log("typeof FaceMesh =", typeof FaceMesh);
