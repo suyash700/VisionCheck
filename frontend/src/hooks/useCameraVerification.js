@@ -2,6 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as FaceMeshModule from "@mediapipe/face_mesh";
 import { Camera } from "@mediapipe/camera_utils";
 
+console.log("=== MEDIAPIPE EXPORTS ===");
+console.log(FaceMeshModule);
+
 export const FACE_STATUS = {
   LOADING: "LOADING",
   NO_FACE: "NO_FACE",
